@@ -1,3 +1,12 @@
+---
+title: Supply Chain Simulation
+emoji: 🚛
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+short_description: Supply chain procurement and logistics simulation
+---
 # SupplyChainEnv
 
 ## What this environment simulates
