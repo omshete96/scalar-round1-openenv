@@ -5,8 +5,8 @@ description: >
   Real-world supply chain simulation. Agent manages inventory across 3 SKUs,
   selects vendors, and recovers from disruptions. Tasks range from easy
   reorder-point optimization to hard cascading disruption recovery.
-author: "hackathon-submitter"
-sdk: gradio
+author: "Om Shete"
+sdk: docker
 sdk_version: "4.0"
 app_file: server/app.py
 python_version: "3.11"

@@ -175,8 +175,9 @@ class SupplyChainEnvironment:
         if (
             self.task_id == "disruption_recovery"
             and self.day == self.DISRUPTION_STEP
-            and not self.using_backup_supplier
         ):
+            # Disruption always fires regardless of supplier choice —
+            # this ensures the grading scenario is always exercised.
             self.supplier_status[0] = "disrupted"
             self.disruption_active = True
 

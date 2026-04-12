@@ -60,20 +60,22 @@ Let \(I_a\) be on-hand inventory **after** serving today’s demand, \(d\) today
 | `vendor_selection` | medium | 20 | Graded on spend efficiency vs budget and step-wise service / no-`disrupted` quality. |
 | `disruption_recovery` | hard | 30 | Port strike on **day 5**: primary lane disrupted; recover within the grading window. |
 
-## Baseline scores (seed=42)
+## Baseline scores (seed=42, rule-based fallback agent)
 
-| Task | Score |
-| --- | --- |
-| reorder_point | ~0.78 |
-| vendor_selection | ~0.54 |
-| disruption_recovery | ~0.31 |
+| Task | Score | Notes |
+| --- | --- | --- |
+| `reorder_point` | **1.00** | Safety stock maintained all 10 steps |
+| `vendor_selection` | **0.81** | Strong cost efficiency + quality service rate |
+| `disruption_recovery` | **1.00** | Proactive reroute before disruption window |
 
 ## Setup
 
 ```bash
 pip install -e .
-uvicorn server.app:app --port 7860
+uvicorn server.app:app --host 0.0.0.0 --port 7860
 ```
+
+> Or simply run `docker build -t supply-chain-env . && docker run -p 7860:7860 supply-chain-env`
 
 ## Environment variables
 

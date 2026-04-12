@@ -1,3 +1,8 @@
+"""Task-specific graders for SupplyChainEnv.
+
+Each grader ingests the full episode history and returns a GradeResult with
+a normalised score in [0.0, 1.0] and a human-readable breakdown dict.
+"""
 from __future__ import annotations
 
 import numpy as np

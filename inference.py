@@ -1,19 +1,18 @@
 """
-inference.py — Scaler Hackathon submission
-Uses OpenAI-compatible client pointed at Groq (free, fast).
+inference.py — Supply Chain Env agent runner.
 
-Optional env vars (set in HF Space Secrets for live LLM calls):
-  API_BASE_URL = https://api.groq.com/openai/v1
-  MODEL_NAME   = llama-3.3-70b-versatile
-  HF_TOKEN     = your Groq API key (free at console.groq.com)
+Loads each task from SupplyChainEnvironment, runs the LLM-based agent
+(with a deterministic rule-based fallback when no API key is configured),
+and emits the required [START]/[STEP]/[END] structured output blocks to stdout.
 
-If the vars are absent the script still runs using the built-in
-rule-based fallback inside llm_act(), so Phase-2 validation passes.
+Environment variables:
+  API_BASE_URL — OpenAI-compatible base URL  (default: Groq)
+  MODEL_NAME   — Model to use                (default: llama-3.3-70b-versatile)
+  HF_TOKEN     — API key (Groq free key from console.groq.com)
 """
 
 import json
 import os
-import uuid
 
 from openai import OpenAI
 
@@ -106,10 +105,12 @@ def run():
     for task_id, seed, max_steps in TASK_CONFIG:
         env = SupplyChainEnvironment()
         obs = env.reset(task_id=task_id, seed=seed)
-        episode_id = str(uuid.uuid4())
-        
-        print(f"START: {episode_id}")
+
+        # --- Required structured output: [START] block ---
+        print(f"[START] task={task_id}", flush=True)
+
         total_reward = 0.0
+        steps_taken = 0
 
         for step_num in range(max_steps):
             action = llm_act(obs.model_dump())
@@ -117,18 +118,22 @@ def run():
             obs = result.observation
             reward = float(result.reward)
             total_reward += reward
-            
-            # STRICT logging format — exactly as expected by the validator regex
-            print(f"STEP: {step_num} | Action: {action.__class__.__name__} | Reward: {reward:.3f} | Done: {result.done}")
-            
+            steps_taken += 1
+
+            # --- Required structured output: [STEP] block ---
+            print(f"[STEP] step={step_num + 1} reward={reward:.4f}", flush=True)
+
             if result.done:
                 break
 
-        print(f"END: {episode_id} | Total Reward: {total_reward:.3f}")
-
         grade = run_all_graders(env.state()["history"], task_id)
+        final_score = float(grade.score)
+
+        # --- Required structured output: [END] block ---
+        print(f"[END] task={task_id} score={final_score:.4f} steps={steps_taken}", flush=True)
+
         all_results[task_id] = {
-            "score": grade.score,
+            "score": final_score,
             "breakdown": grade.breakdown,
         }
 
