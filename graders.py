@@ -1,7 +1,7 @@
 """Task-specific graders for SupplyChainEnv.
 
 Each grader ingests the full episode history and returns a GradeResult with
-a normalised score in [0.0, 1.0] and a human-readable breakdown dict.
+a normalised score strictly in (0, 1) — i.e. never exactly 0.0 or 1.0.
 """
 from __future__ import annotations
 
@@ -10,6 +10,15 @@ import numpy as np
 from environment import SupplyChainEnvironment
 from models import GradeResult
 
+# Validator requires scores to be *strictly* between 0 and 1 (open interval).
+_SCORE_MIN = 0.001
+_SCORE_MAX = 0.999
+
+
+def _clamp(score: float) -> float:
+    """Clamp score to the open interval (_SCORE_MIN, _SCORE_MAX)."""
+    return float(np.clip(score, _SCORE_MIN, _SCORE_MAX))
+
 
 def grade_reorder_point(history: list[dict]) -> GradeResult:
     env_ref = SupplyChainEnvironment()
@@ -17,7 +26,7 @@ def grade_reorder_point(history: list[dict]) -> GradeResult:
     n_skus = env_ref.N_SKUS
     if not history:
         return GradeResult(
-            score=0.0,
+            score=_clamp(0.0),
             breakdown={"pairs_ok": 0, "pairs_total": 0},
             task_id="reorder_point",
         )
@@ -29,7 +38,7 @@ def grade_reorder_point(history: list[dict]) -> GradeResult:
             if float(inv[i]) > float(safety[i]):
                 pairs_ok += 1
     score = pairs_ok / float(pairs_total) if pairs_total else 0.0
-    score = float(np.clip(score, 0.0, 1.0))
+    score = _clamp(score)
     return GradeResult(
         score=score,
         breakdown={"pairs_ok": pairs_ok, "pairs_total": pairs_total},
@@ -42,7 +51,7 @@ def grade_vendor_selection(history: list[dict]) -> GradeResult:
     max_possible = float(env_ref.INITIAL_BUDGET)
     if not history:
         return GradeResult(
-            score=0.0,
+            score=_clamp(0.0),
             breakdown={"cost_score": 0.0, "quality_score": 0.0},
             task_id="vendor_selection",
         )
@@ -62,7 +71,7 @@ def grade_vendor_selection(history: list[dict]) -> GradeResult:
     quality_score = float(np.clip(quality_score, 0.0, 1.0))
 
     score = 0.6 * cost_score + 0.4 * quality_score
-    score = float(np.clip(score, 0.0, 1.0))
+    score = _clamp(score)
     return GradeResult(
         score=score,
         breakdown={
@@ -78,7 +87,7 @@ def grade_vendor_selection(history: list[dict]) -> GradeResult:
 def grade_disruption_recovery(history: list[dict]) -> GradeResult:
     if not history:
         return GradeResult(
-            score=0.0,
+            score=_clamp(0.0),
             breakdown={
                 "steps_to_recovery": None,
                 "stockout_count": 0,
@@ -97,7 +106,7 @@ def grade_disruption_recovery(history: list[dict]) -> GradeResult:
         base_score = 0.0
         proactive_bonus = 0.0
         return GradeResult(
-            score=float(np.clip(base_score + proactive_bonus, 0.0, 1.0)),
+            score=_clamp(base_score + proactive_bonus),
             breakdown={
                 "steps_to_recovery": None,
                 "stockout_count": 0,
@@ -139,7 +148,7 @@ def grade_disruption_recovery(history: list[dict]) -> GradeResult:
     if rerouted_early:
         proactive_bonus = 0.1
 
-    score = float(np.clip(base_score + proactive_bonus, 0.0, 1.0))
+    score = _clamp(base_score + proactive_bonus)
     return GradeResult(
         score=score,
         breakdown={
@@ -161,7 +170,7 @@ def run_all_graders(history: list[dict], task_id: str) -> GradeResult:
     if task_id == "disruption_recovery":
         return grade_disruption_recovery(history)
     return GradeResult(
-        score=0.0,
+        score=_clamp(0.0),
         breakdown={"error": f"unknown task_id: {task_id}"},
         task_id=task_id,
     )
